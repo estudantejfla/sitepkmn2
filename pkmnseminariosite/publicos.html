@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Times Públicos</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <video autoplay muted loop id="bg-video" class="background-video">
+    <source src="imagens/background.mp4" type="video/mp4">
+  </video>
+  <div class="container">
+    <div class="navbar">
+    <a href="index.html">Início</a>
+    <a href="blog.html">Blog</a>
+    <a href="postar.html">Nova Postagem</a>
+    <a href="times.html">Meus Times</a>
+    <a href="criar_time.html">Criar Time</a>
+    <a href="publicos.html">Times Públicos</a>
+    <a href="cadastro.html">Tipos</a>
+    <a href="faq.html">FAQ</a>
+    <a href="depoimentos.html">Depoimentos</a>
+    <a href="sobre.html">Sobre</a>
+  </div>
+    <h1>Times Públicos</h1>
+    <div id="lista"></div>
+    <br>
+    <a href="times.html" class="back-button">Voltar</a>
+  </div>
+
+  <script>
+
+    let user = localStorage.getItem("logado");
+    let contas = JSON.parse(localStorage.getItem("contas")) || {};
+    if (!user || !contas[user]) {
+      alert("Você precisa estar logado para ver times públicos");
+      window.location.href = "index.html";
+    }
+
+    let publicos = JSON.parse(localStorage.getItem("timesPublicos")) || [];
+    let pokemonList = [];
+
+    async function loadPokemonList() {
+      for (let i = 1; i <= 151; i++) {
+        let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
+        let poke = await res.json();
+        pokemonList.push(poke);
+      }
+      mostrarTimes();
+    }
+
+    function getPokemonSprite(name) {
+      let p = pokemonList.find(p => p.name === name.toLowerCase());
+      return p ? p.sprites.front_default : '';
+    }
+
+    function mostrarTimes() {
+      let div = document.getElementById("lista");
+      div.innerHTML = publicos.length === 0 ? "<p>Nenhum time público ainda.</p>" : "";
+      publicos.forEach(time => {
+        let box = document.createElement("div");
+        box.className = "card time-card";
+        let pokemons = time.pokemons.map(p => `
+          <div class='pokemon-item'>
+            ${getPokemonSprite(p) ? `<img src='${getPokemonSprite(p)}' width='60'>` : ''}
+            <span>${p}</span>
+          </div>`).join("");
+        box.innerHTML = `<h3>${time.nome}</h3><p class='time-owner'>Por: ${time.dono}</p><div class='pokemon-grid'>${pokemons}</div>`;
+        div.appendChild(box);
+      });
+    }
+
+    loadPokemonList();
+  </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <title>FAQ - Criar Time Pokémon</title>
+  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+  
+  <video autoplay muted loop id="bg-video" class="background-video">
+    <source src="imagens/background.mp4" type="video/mp4">
+  </video>
+
+  <div class="container">
+    
+  <div class="navbar">
+    <a href="index.html">Início</a>
+    <a href="blog.html">Blog</a>
+    <a href="postar.html">Nova Postagem</a>
+    <a href="times.html">Meus Times</a>
+    <a href="criar_time.html">Criar Time</a>
+    <a href="publicos.html">Times Públicos</a>
+    <a href="cadastro.html">Tipos</a>
+    <a href="faq.html">FAQ</a>
+    <a href="depoimentos.html">Depoimentos</a>
+    <a href="sobre.html">Sobre</a>
+  </div>
+
+    
+  <h1>Perguntas Frequentes</h1>
+  <div class="accordion">
+    <div class="acc-item">
+      <button class="acc-btn">Preciso criar conta?</button>
+      <div class="acc-panel"><p>Sim.</p></div>
+    </div>
+    <div class="acc-item">
+      <button class="acc-btn">Meus times são públicos?</button>
+      <div class="acc-panel"><p>Por padrão são privados. Você pode marcar como público ao salvar.</p></div>
+    </div>
+    <div class="acc-item">
+      <button class="acc-btn">Esse site é so uma modificação de um codigo que eu ja tinha enviado no passado?</button>
+      <div class="acc-panel"><p>Sim.</p></div>
+    </div>
+  </div>
+  <script>
+
+    document.querySelectorAll('.acc-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        btn.classList.toggle('open');
+        const panel = btn.nextElementSibling;
+        panel.style.maxHeight = panel.style.maxHeight ? null : panel.scrollHeight + 'px';
+      });
+    });
+  </script>
+
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Login Pokémon</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <video autoplay muted loop id="bg-video" class="background-video">
+    <source src="imagens/background.mp4" type="video/mp4">
+  </video>
+  <div class="container">
+    <a class="btn" href="blog.html">← Voltar para o Blog</a>
+    <h1>Login Pokémon</h1>
+    <div class="box">
+      <h2>Entrar</h2>
+      <input id="loginUser" placeholder="Usuário"><br>
+      <input id="loginPass" type="password" placeholder="Senha"><br>
+      <button onclick="login()">Entrar</button>
+    </div>
+    <div class="box">
+      <h2>Criar Conta</h2>
+      <input id="newUser" placeholder="Novo usuário"><br>
+      <input id="newPass" type="password" placeholder="Nova senha"><br>
+      <button onclick="criarConta()">Criar Conta</button>
+    </div>
+  </div>
+
+  <script>
+    function criarConta() {
+      let user = document.getElementById("newUser").value;
+      let pass = document.getElementById("newPass").value;
+      if (!user || !pass) return alert("Preencha usuário e senha");
+      let contas = JSON.parse(localStorage.getItem("contas")) || {};
+      if (contas[user]) return alert("Usuário já existe");
+      contas[user] = { senha: pass, times: [] };
+      localStorage.setItem("contas", JSON.stringify(contas));
+      alert("Conta criada!");
+    }
+
+    function login() {
+      let user = document.getElementById("loginUser").value;
+      let pass = document.getElementById("loginPass").value;
+      let contas = JSON.parse(localStorage.getItem("contas")) || {};
+      if (contas[user] && contas[user].senha === pass) {
+        localStorage.setItem("logado", user);
+        window.location.href = "times.html";
+      } else {
+        alert("Usuário ou senha incorretos");
+      }
+    }
+  </script>
+</body>
+</html>

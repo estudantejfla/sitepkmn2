@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Fraquezas e Resistências</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <video autoplay muted loop id="bg-video" class="background-video">
+    <source src="imagens/background.mp4" type="video/mp4">
+  </video>
+
+  <div class="container">
+    <div class="navbar">
+    <a href="index.html">Início</a>
+    <a href="blog.html">Blog</a>
+    <a href="postar.html">Nova Postagem</a>
+    <a href="times.html">Meus Times</a>
+    <a href="criar_time.html">Criar Time</a>
+    <a href="publicos.html">Times Públicos</a>
+    <a href="cadastro.html">Tipos</a>
+    <a href="faq.html">FAQ</a>
+    <a href="depoimentos.html">Depoimentos</a>
+    <a href="sobre.html">Sobre</a>
+  </div>
+
+    <h1>Fraquezas e Resistências de Pokémon</h1>
+    <input type="text" id="pokemonSearch" placeholder="Buscar Pokémon...">
+    <div id="pokemonList" class="grid"></div>
+
+    <div id="info" class="card" style="margin-top:20px; display:none;">
+      <h2 id="pokeName"></h2>
+      <img id="pokeImg" src="">
+      <h3>Tipos</h3>
+      <p id="pokeTypes"></p>
+      <h3>Fraquezas</h3>
+      <p id="pokeWeaknesses"></p>
+      <h3>Resistências</h3>
+      <p id="pokeResistances"></p>
+      <h3>Super Efetivo Contra</h3>
+      <p id="pokeSuperEffective"></p>
+    </div>
+  </div>
+
+  <script>
+    let allTypes = {};
+    
+    async function carregarTipos(){
+      let res = await fetch("https://pokeapi.co/api/v2/type");
+      let data = await res.json();
+      for (let t of data.results){
+        let res2 = await fetch(t.url);
+        let typeData = await res2.json();
+        allTypes[t.name] = typeData.damage_relations;
+      }
+    }
+
+    async function carregarPokemons(){
+      let container = document.getElementById("pokemonList");
+      container.innerHTML = "";
+      for (let i = 1; i <= 1025; i++){
+        let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
+        if (!res.ok) continue;
+        let poke = await res.json();
+        let div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i}.png">
+          <p>${poke.name}</p>
+          <button onclick="mostrarInfo('${poke.name}', ${i})">Ver Info</button>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    async function mostrarInfo(nome, id){
+      let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+      let poke = await res.json();
+      let tipos = poke.types.map(t=> t.type.name);
+
+      let weak = new Set();
+      let resist = new Set();
+      let superEff = new Set();
+
+      for (let tipo of tipos){
+        let rel = allTypes[tipo];
+        rel.double_damage_from.forEach(t=> weak.add(t.name));
+        rel.half_damage_from.forEach(t=> resist.add(t.name));
+        rel.double_damage_to.forEach(t=> superEff.add(t.name));
+      }
+
+      document.getElementById("pokeName").textContent = nome;
+      document.getElementById("pokeImg").src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+      document.getElementById("pokeTypes").textContent = tipos.join(", ");
+      document.getElementById("pokeWeaknesses").textContent = [...weak].join(", ") || "Nenhuma";
+      document.getElementById("pokeResistances").textContent = [...resist].join(", ") || "Nenhuma";
+      document.getElementById("pokeSuperEffective").textContent = [...superEff].join(", ") || "Nenhum";
+
+      document.getElementById("info").style.display = "block";
+    }
+
+    function buscarPokemon(){
+      let termo = document.getElementById("pokemonSearch").value.toLowerCase();
+      let cards = document.querySelectorAll("#pokemonList .card");
+      cards.forEach(card=>{
+        let nome = card.querySelector("p").textContent.toLowerCase();
+        card.style.display = nome.includes(termo) ? "block" : "none";
+      });
+    }
+
+    document.getElementById("pokemonSearch").addEventListener("input", buscarPokemon);
+
+    carregarTipos();
+    carregarPokemons();
+  </script>
+</body>
+</html>

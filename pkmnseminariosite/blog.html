@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <title>Blog - Criar Time Pokémon</title>
+  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+  
+  <video autoplay muted loop id="bg-video" class="background-video">
+    <source src="imagens/background.mp4" type="video/mp4">
+  </video>
+
+  <div class="container">
+    
+  <div class="navbar">
+    <a href="index.html">Início</a>
+    <a href="blog.html">Blog</a>
+    <a href="postar.html">Nova Postagem</a>
+    <a href="times.html">Meus Times</a>
+    <a href="criar_time.html">Criar Time</a>
+    <a href="publicos.html">Times Públicos</a>
+    <a href="cadastro.html">Tipos</a>
+    <a href="faq.html">FAQ</a>
+    <a href="depoimentos.html">Depoimentos</a>
+    <a href="sobre.html">Sobre</a>
+  </div>
+
+  <h1>Blog / Notícias</h1>
+  <div class="card">
+    <h3>Teste</h3>
+    <p class="muted">Publicado</p>
+    <p>teste texto caixa</p>
+  </div>
+  <h2>Postagens da Comunidade</h2>
+  <div id="userPosts" class="grid"></div>
+  <script>
+    let user = localStorage.getItem("logado");
+    let contas = JSON.parse(localStorage.getItem("contas")) || {};
+    if (!user || !contas[user]) {
+      alert("Você precisa estar logado para ver e escrever no blog");
+      window.location.href = "index.html";
+    }
+    function renderUserPosts(){
+      const posts = JSON.parse(localStorage.getItem('blog_posts')||'[]');
+      const el = document.getElementById('userPosts');
+      el.innerHTML = posts.length ? '' : '<p class="muted">Sem postagens ainda. <a href="postar.html">Crie a primeira!</a></p>';
+      posts.forEach(p=>{
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<h3>${p.title}</h3><p class="muted">Publicado em ${p.date}</p><p>${p.body}</p>`;
+        el.appendChild(card);
+      });
+    }
+    renderUserPosts();
+  </script>
