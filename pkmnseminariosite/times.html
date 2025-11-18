@@ -1,138 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>Meus Times</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <video autoplay muted loop id="bg-video" class="background-video">
-    <source src="imagens/background.mp4" type="video/mp4">
-  </video>
-
   <div class="container">
-
     <div class="navbar">
       <a href="index.html">Início</a>
-      <a href="blog.html">Blog</a>
-      <a href="postar.html">Nova Postagem</a>
       <a href="times.html">Meus Times</a>
       <a href="criar_time.html">Criar Time</a>
       <a href="publicos.html">Times Públicos</a>
-      <a href="cadastro.html">Tipos</a>
-      <a href="faq.html">FAQ</a>
-      <a href="depoimentos.html">Depoimentos</a>
-      <a href="sobre.html">Sobre</a>
     </div>
-
-    <h1>Bem-vindo, <span id="usuario"></span>!</h1>
-    <h2>Meus Times</h2>
-
+    <h1>Meus Times — <span id="usuario"></span></h1>
     <div id="meusTimes"></div>
-
-    <button onclick="window.location.href='criar_time.html'">Criar Novo Time</button><br><br>
+    <button onclick="window.location.href='criar_time.html'">Criar Novo Time</button>
     <a href="index.html" onclick="logout()">Sair</a>
-
   </div>
-
-  <script src="frontend-api.js"></script>
-
-  <script>
-(async function() {
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  if (!user) {
-    alert("Você precisa estar logado");
-    return window.location.href = "index.html";
-  }
-  document.getElementById("usuario").textContent = user.username || user.email;
-
-  const nameToId = {};
-  for (let i = 1; i <= 151; i++) nameToId["temp" + i] = i;
-
-  async function loadPokemonMap() {
-    for (let i = 1; i <= 151; i++) {
-      const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
-      if (!res.ok) continue;
-      const p = await res.json();
-      nameToId[p.name.toLowerCase()] = i;
-    }
-  }
-
-  async function loadTeams() {
-    const div = document.getElementById("meusTimes");
-    div.innerHTML = "<p>Carregando...</p>";
-
-    const res = await apiFetch(`/teams/user/${user.id}`);
-    if (!res.ok) {
-      div.innerHTML = "<p>Erro ao carregar times.</p>";
-      return;
-    }
-
-    const teams = res.data || [];
-    if (!teams.length) {
-      div.innerHTML = "<p>Você ainda não criou nenhum time.</p>";
-      return;
-    }
-
-    div.innerHTML = "";
-
-    teams.forEach(time => {
-      let pokeList = [];
-      try { pokeList = JSON.parse(time.pokemon || "[]"); }
-      catch { pokeList = []; }
-
-      const pokeHTML = pokeList.map(p => {
-        const id = nameToId[p.toLowerCase()] || 1;
-        return `
-          <div class="pokemon-item">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png">
-            <span>${p}</span>
-          </div>`;
-      }).join("");
-
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <strong>${time.name}</strong><br>
-        <div class="pokemon-container">${pokeHTML}</div>
-
-        <div class="time-actions">
-          <button onclick="editarTime('${time.id}')">Editar</button>
-          <button onclick="compartilharTime('${time.id}')" class="share-btn">Compartilhar</button>
-          <button onclick="excluirTime('${time.id}')" class="delete-btn">Excluir</button>
-        </div>
-      `;
-      div.appendChild(card);
-    });
-  }
-
-  window.editarTime = function(id) {
-    window.location.href = `criar_time.html?edit=${id}`;
-  };
-
-  window.compartilharTime = async function(id) {
-    const res = await apiFetch(`/teams/share/${id}`, { method: "POST" });
-    alert(res.ok ? "Time compartilhado!" : (res.data?.error || "Erro ao compartilhar"));
-    loadTeams();
-  };
-
-  window.excluirTime = async function(id) {
-    if (!confirm("Excluir este time?")) return;
-    const res = await apiFetch(`/teams/${id}`, { method: "DELETE" });
-    if (res.ok) loadTeams();
-    else alert(res.data?.error || "Erro ao excluir");
-  };
-
-  window.logout = function() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    window.location.href = "index.html";
-  };
-
-  await loadPokemonMap();
-  await loadTeams();
-})();
-  </script>
-
+<script src="frontend-api.js"></script>
+<script>
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if (!user) { alert("Você precisa estar logado"); window.location.href="index.html"; }
+document.getElementById("usuario").textContent = user.username;
+const nameToId = {};
+async function ensureNameToId(names){
+  const missing = names.filter(n=>!(n in nameToId));
+  await Promise.all(missing.map(async n=>{
+    try{
+      const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${n.toLowerCase()}`);
+      if (!r.ok) return;
+      const j = await r.json();
+      nameToId[n.toLowerCase()] = j.id;
+    }catch{}
+  }));
+}
+async function loadTeams(){
+  const div = document.getElementById("meusTimes");
+  div.innerHTML = "Carregando...";
+  const res = await apiFetch(`/teams/user/${user.id}`);
+  if (!res.ok) return div.innerHTML = "Erro ao carregar times.";
+  const teams = res.data || [];
+  if (!teams.length) { div.innerHTML = "Você ainda não criou nenhum time."; return; }
+  const allNames = Array.from(new Set(teams.flatMap(t => t.pokemon || [])));
+  await ensureNameToId(allNames);
+  div.innerHTML = "";
+  teams.forEach(t=>{
+    const pokeHTML = (t.pokemon || []).map(p=>{
+      const id = nameToId[p.toLowerCase()] || 1;
+      return `<div class="pokemon-item"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png"><span>${p}</span></div>`;
+    }).join("");
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<strong>${t.name}</strong><div class="pokemon-container">${pokeHTML}</div>
+      <div class="time-actions">
+        <button onclick="editarTime('${t.id}')">Editar</button>
+        <button onclick="compartilharTime('${t.id}')">Compartilhar</button>
+        <button onclick="excluirTime('${t.id}')">Excluir</button>
+      </div>`;
+    div.appendChild(card);
+  });
+}
+window.editarTime = id => { window.location.href = `criar_time.html?edit=${id}`; };
+window.compartilharTime = async id => {
+  const res = await apiFetch(`/teams/share/${id}`, { method: "POST" });
+  alert(res.ok ? "Time compartilhado" : (res.data?.error||"Erro"));
+  loadTeams();
+};
+window.excluirTime = async id => {
+  if (!confirm("Excluir este time?")) return;
+  const res = await apiFetch(`/teams/${id}`, { method: "DELETE" });
+  if (res.ok) loadTeams(); else alert(res.data?.error || "Erro ao excluir");
+};
+window.logout = () => { localStorage.removeItem("token"); localStorage.removeItem("user"); window.location.href="index.html"; };
+loadTeams();
+</script>
 </body>
 </html>
