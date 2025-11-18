@@ -85,9 +85,6 @@ function fecharModal() { modal.style.display = "none"; }
 document.querySelector(".close").onclick = fecharModal;
 window.onclick = e => { if (e.target === modal) fecharModal(); };
 
-/* ===========================
-   LOAD POKÉMON FROM API
-=========================== */
 async function carregarPokemons() {
   const container = document.getElementById("pokemonList");
   container.innerHTML = "<p>Carregando pokémons...</p>";
@@ -98,15 +95,19 @@ async function carregarPokemons() {
   for (let i = 1; i <= max; i++) {
     const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
     if (!res.ok) continue;
+
     const p = await res.json();
-    const name = p.name;
+    const name = p.name.toLowerCase();
+
+   
+    nameToId[name] = i;
 
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
       <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i}.png">
-      <p>${name}</p>
-      <button onclick="selecionarPokemon('${name}')">Adicionar</button>
+      <p>${p.name}</p>
+      <button onclick="selecionarPokemon('${p.name}')">Adicionar</button>
     `;
     container.appendChild(div);
   }
