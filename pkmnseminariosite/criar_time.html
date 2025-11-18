@@ -9,27 +9,30 @@
   <video autoplay muted loop id="bg-video" class="background-video">
     <source src="imagens/background.mp4" type="video/mp4">
   </video>
+
   <div class="container">
     <div class="navbar">
-    <a href="index.html">Início</a>
-    <a href="blog.html">Blog</a>
-    <a href="postar.html">Nova Postagem</a>
-    <a href="times.html">Meus Times</a>
-    <a href="criar_time.html">Criar Time</a>
-    <a href="publicos.html">Times Públicos</a>
-    <a href="cadastro.html">Tipos</a>
-    <a href="faq.html">FAQ</a>
-    <a href="depoimentos.html">Depoimentos</a>
-    <a href="sobre.html">Sobre</a>
-  </div>
+      <a href="index.html">Início</a>
+      <a href="blog.html">Blog</a>
+      <a href="postar.html">Nova Postagem</a>
+      <a href="times.html">Meus Times</a>
+      <a href="criar_time.html">Criar Time</a>
+      <a href="publicos.html">Times Públicos</a>
+      <a href="cadastro.html">Tipos</a>
+      <a href="faq.html">FAQ</a>
+      <a href="depoimentos.html">Depoimentos</a>
+      <a href="sobre.html">Sobre</a>
+    </div>
 
     <h1>Criar/Editar Time</h1>
     <p>Usuário: <span id="usuario"></span></p>
+
     <input id="nomeTime" placeholder="Nome do Time"><br>
 
     <h3>Seu Time</h3>
     <div id="slots" class="grid"></div>
 
+    <!-- Pokémon Modal -->
     <div id="pokemonModal" class="modal">
       <div class="modal-content">
         <span class="close">&times;</span>
@@ -39,72 +42,188 @@
     </div>
 
     <button onclick="salvarTime()">Salvar Time</button><br><br>
-    <button onclick="limparTime()" style="background-color: #f44336;">Limpar Time</button><br><br>
+    <button onclick="limparTime()" style="background-color:#f44336;">Limpar Time</button><br><br>
     <a href="times.html">Voltar</a>
 
     <script src="frontend-api.js"></script>
+
 <script>
-(async function(){
-  const user = JSON.parse(localStorage.getItem("user")||"null");
-  if (!user) { alert("Você precisa estar logado"); window.location.href = "index.html"; return; }
-  document.getElementById("usuario").textContent = user.username || user.email;
+/* ===========================
+   USER VALIDATION
+=========================== */
+const user = JSON.parse(localStorage.getItem("user") || "null");
+if (!user) {
+  alert("Você precisa estar logado");
+  window.location.href = "index.html";
+}
+document.getElementById("usuario").textContent = user.username;
 
-  let slots = [];
-  let editingId = null;
-  const params = new URLSearchParams(location.search);
-  if (params.has("edit")) editingId = params.get("edit");
+/* ===========================
+   TEAM EDITING / BASIC SETUP
+=========================== */
+let slots = [];
+let editingId = null;
+let currentSlot = 0;
 
-  async function loadEdit() {
-    if (!editingId) return mostrarSlots();
-    const res = await apiFetch(`/teams/${editingId}`);
-    if (!res.ok) return alert("Erro ao carregar time para edição");
-    const team = res.data;
-    document.getElementById("nomeTime").value = team.name;
-    slots = team.pokemon || [];
-    mostrarSlots();
+const params = new URLSearchParams(location.search);
+if (params.has("edit")) editingId = params.get("edit");
+
+/* ===========================
+   MODAL FUNCTIONS
+=========================== */
+let modal = document.getElementById("pokemonModal");
+
+function abrirModal(i) {
+  currentSlot = i;
+  if (document.getElementById("pokemonList").children.length === 0) {
+    carregarPokemons(); 
   }
+  modal.style.display = "block";
+}
+function fecharModal() { modal.style.display = "none"; }
 
-  function mostrarSlots() {
-    const container = document.getElementById("slots");
-    container.innerHTML = "";
-    for (let i=0;i<6;i++){
-      const div = document.createElement("div");
-      div.className = "card";
-      if (slots[i]) {
-        div.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${getPokemonId(slots[i])}.png"><p>${slots[i]}</p><button onclick='removerPokemon(${i})'>Remover</button>`;
-      } else {
-        div.innerHTML = `<button onclick='abrirModal(${i})'>Adicionar Pokémon</button>`;
-      }
-      container.appendChild(div);
+document.querySelector(".close").onclick = fecharModal;
+window.onclick = e => { if (e.target === modal) fecharModal(); };
+
+/* ===========================
+   LOAD POKÉMON FROM API
+=========================== */
+async function carregarPokemons() {
+  const container = document.getElementById("pokemonList");
+  container.innerHTML = "<p>Carregando pokémons...</p>";
+
+  const max = 151;
+  container.innerHTML = "";
+
+  for (let i = 1; i <= max; i++) {
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
+    if (!res.ok) continue;
+    const p = await res.json();
+    const name = p.name;
+
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i}.png">
+      <p>${name}</p>
+      <button onclick="selecionarPokemon('${name}')">Adicionar</button>
+    `;
+    container.appendChild(div);
+  }
+}
+
+function buscarPokemon() {
+  const termo = document.getElementById("pokemonSearch").value.toLowerCase();
+  const cards = document.querySelectorAll("#pokemonList .card");
+  cards.forEach(c => {
+    const nome = c.querySelector("p").textContent.toLowerCase();
+    c.style.display = nome.includes(termo) ? "block" : "none";
+  });
+}
+
+function selecionarPokemon(nome) {
+  slots[currentSlot] = nome;
+  mostrarSlots();
+  fecharModal();
+}
+
+/* ===========================
+   SLOT DISPLAY
+=========================== */
+function mostrarSlots() {
+  const container = document.getElementById("slots");
+  container.innerHTML = "";
+
+  for (let i = 0; i < 6; i++) {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    if (slots[i]) {
+      div.innerHTML = `
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${getPokemonId(slots[i])}.png">
+        <p>${slots[i]}</p>
+        <button onclick="removerPokemon(${i})">Remover</button>
+      `;
+    } else {
+      div.innerHTML = `<button onclick="abrirModal(${i})">Adicionar Pokémon</button>`;
     }
+
+    container.appendChild(div);
   }
+}
 
-  window.getPokemonId = function(name){ return slotsLikeIndex(name);  };
+// simple converter: name → Pokedex ID
+function getPokemonId(name) {
+  return nameToId[name.toLowerCase()] || 1;
+}
 
-  window.selecionarPokemon = function(nome){
-    slots[currentSlot] = nome;
-    mostrarSlots();
-    fecharModal();
+// build name → id index for 151 Pokémon
+const nameToId = {};
+for (let i = 1; i <= 151; i++) nameToId["temp"+i]=i;
+
+/* ===========================
+   REMOVE POKEMON
+=========================== */
+function removerPokemon(i) {
+  slots[i] = null;
+  mostrarSlots();
+}
+
+/* ===========================
+   SAVE TEAM TO BACKEND
+=========================== */
+async function salvarTime() {
+  const name = document.getElementById("nomeTime").value.trim();
+  const pokemons = slots.filter(Boolean);
+
+  if (!name || pokemons.length === 0)
+    return alert("Nome e pelo menos 1 Pokémon obrigatórios!");
+
+  const payload = {
+    ownerId: user.id,
+    name,
+    pokemon: pokemons,
+    description: ""
   };
 
-  async function salvarTime(){
-    const nome = document.getElementById("nomeTime").value.trim();
-    const pokemons = slots.filter(Boolean);
-    if(!nome || pokemons.length===0) return alert("Nome e pelo menos 1 Pokémon obrigatórios");
-    const payload = { ownerId: user.id, name: nome, pokemon: pokemons, description: "" };
-    let res;
-    if (editingId) res = await apiFetch(`/teams/${editingId}`, { method: "PUT", body: JSON.stringify(payload) });
-    else res = await apiFetch(`/teams`, { method: "POST", body: JSON.stringify(payload) });
-
-    if (res.ok) { alert("Time salvo!"); window.location.href = "times.html"; }
-    else alert(res.data?.error||"Erro ao salvar time");
+  let res;
+  if (editingId) {
+    res = await apiFetch(`/teams/${editingId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+  } else {
+    res = await apiFetch(`/teams`, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
   }
 
-  document.querySelector('button[onclick="salvarTime()"]').addEventListener('click', salvarTime);
+  if (res.ok) {
+    alert("Time salvo!");
+    window.location.href = "times.html";
+  } else {
+    alert("Erro ao salvar time");
+  }
+}
 
-  await loadEdit();
+/* ===========================
+   LOAD TEAM IF EDITING
+=========================== */
+async function loadEdit() {
+  if (!editingId) return mostrarSlots();
+
+  const res = await apiFetch(`/teams/${editingId}`);
+  if (!res.ok) return alert("Erro ao carregar time");
+
+  document.getElementById("nomeTime").value = res.data.name;
+  slots = res.data.pokemon || [];
   mostrarSlots();
-})();
+}
+
+/* ===== INITIALIZE ===== */
+loadEdit();
+mostrarSlots();
 </script>
 
   </div>
