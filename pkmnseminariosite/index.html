@@ -9,15 +9,18 @@
   <video autoplay muted loop id="bg-video" class="background-video">
     <source src="imagens/background.mp4" type="video/mp4">
   </video>
+
   <div class="container">
     <a class="btn" href="blog.html">← Voltar para o Blog</a>
     <h1>Login Pokémon</h1>
+
     <div class="box">
       <h2>Entrar</h2>
       <input id="loginUser" placeholder="Usuário"><br>
       <input id="loginPass" type="password" placeholder="Senha"><br>
       <button onclick="login()">Entrar</button>
     </div>
+
     <div class="box">
       <h2>Criar Conta</h2>
       <input id="newUser" placeholder="Novo usuário"><br>
@@ -27,39 +30,52 @@
   </div>
 
   <script src="frontend-api.js"></script>
+
 <script>
+/* ======================
+   CRIAR CONTA (REGISTER)
+   ====================== */
 async function criarConta() {
   const username = document.getElementById("newUser").value.trim();
   const password = document.getElementById("newPass").value.trim();
-  const email = username;
-  if (!username || !password) return alert("Preencha usuário e senha");
+
+  if (!username || !password)
+    return alert("Preencha usuário e senha");
 
   const res = await apiFetch("/auth/register", {
     method: "POST",
-    body: JSON.stringify({ username, email, password })
+    body: JSON.stringify({ username, password })
   });
 
   if (res.ok) {
-    alert("Conta criada! Faça login.");
+    alert("Conta criada! Agora faça login.");
   } else {
     alert(res.data?.error || "Erro ao criar conta");
   }
 }
 
+/* ======================
+   LOGIN
+   ====================== */
 async function login() {
-  const email = document.getElementById("loginUser").value.trim();
+  const username = document.getElementById("loginUser").value.trim();
   const password = document.getElementById("loginPass").value.trim();
-  if (!email || !password) return alert("Preencha usuário e senha");
+
+  if (!username || !password)
+    return alert("Preencha usuário e senha");
 
   const res = await apiFetch("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ username, password })
   });
 
-  if (!res.ok) return alert(res.data?.error || "Credenciais inválidas");
+  if (!res.ok) {
+    return alert(res.data?.error || "Credenciais inválidas");
+  }
 
   localStorage.setItem("token", res.data.token);
   localStorage.setItem("user", JSON.stringify(res.data.user));
+
   window.location.href = "times.html";
 }
 </script>
