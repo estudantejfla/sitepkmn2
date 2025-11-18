@@ -12,7 +12,6 @@
 
   <div class="container">
 
-    <!-- NAVBAR -->
     <div class="navbar">
       <a href="index.html">Início</a>
       <a href="blog.html">Blog</a>
@@ -40,7 +39,6 @@
 
   <script>
 (async function() {
-  // --- AUTH ---
   const user = JSON.parse(localStorage.getItem("user") || "null");
   if (!user) {
     alert("Você precisa estar logado");
@@ -48,27 +46,27 @@
   }
   document.getElementById("usuario").textContent = user.username || user.email;
 
-  // --- MAPA DE NOME -> ID ---
   const nameToId = {};
+  for (let i = 1; i <= 151; i++) nameToId["temp" + i] = i;
 
   async function loadPokemonMap() {
-    for (let i = 1; i <= 1025; i++) {
-      try {
-        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
-        if (!res.ok) continue;
-        const p = await res.json();
-        nameToId[p.name.toLowerCase()] = i;
-      } catch {}
+    for (let i = 1; i <= 151; i++) {
+      const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
+      if (!res.ok) continue;
+      const p = await res.json();
+      nameToId[p.name.toLowerCase()] = i;
     }
   }
 
-  // --- CARREGAR TIMES ---
   async function loadTeams() {
     const div = document.getElementById("meusTimes");
     div.innerHTML = "<p>Carregando...</p>";
 
     const res = await apiFetch(`/teams/user/${user.id}`);
-    if (!res.ok) return div.innerHTML = "<p>Erro ao carregar times.</p>";
+    if (!res.ok) {
+      div.innerHTML = "<p>Erro ao carregar times.</p>";
+      return;
+    }
 
     const teams = res.data || [];
     if (!teams.length) {
@@ -76,10 +74,14 @@
       return;
     }
 
-    div.innerHTML = ""; // limpar
+    div.innerHTML = "";
 
     teams.forEach(time => {
-      const pokeHTML = (time.pokemon || []).map(p => {
+      let pokeList = [];
+      try { pokeList = JSON.parse(time.pokemon || "[]"); }
+      catch { pokeList = []; }
+
+      const pokeHTML = pokeList.map(p => {
         const id = nameToId[p.toLowerCase()] || 1;
         return `
           <div class="pokemon-item">
@@ -104,7 +106,6 @@
     });
   }
 
-  // --- AÇÕES ---
   window.editarTime = function(id) {
     window.location.href = `criar_time.html?edit=${id}`;
   };
@@ -128,10 +129,8 @@
     window.location.href = "index.html";
   };
 
-  // --- CARREGAR TUDO ---
-  await loadPokemonMap();  // ★ NECESSÁRIO PARA MOSTRAR SPRITES
+  await loadPokemonMap();
   await loadTeams();
-
 })();
   </script>
 
