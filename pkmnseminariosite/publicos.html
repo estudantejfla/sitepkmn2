@@ -6,70 +6,103 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
   <video autoplay muted loop id="bg-video" class="background-video">
     <source src="imagens/background.mp4" type="video/mp4">
   </video>
+
   <div class="container">
+
     <div class="navbar">
-    <a href="index.html">Início</a>
-    <a href="blog.html">Blog</a>
-    <a href="postar.html">Nova Postagem</a>
-    <a href="times.html">Meus Times</a>
-    <a href="criar_time.html">Criar Time</a>
-    <a href="publicos.html">Times Públicos</a>
-    <a href="cadastro.html">Tipos</a>
-    <a href="faq.html">FAQ</a>
-    <a href="depoimentos.html">Depoimentos</a>
-    <a href="sobre.html">Sobre</a>
-  </div>
+      <a href="index.html">Início</a>
+      <a href="blog.html">Blog</a>
+      <a href="postar.html">Nova Postagem</a>
+      <a href="times.html">Meus Times</a>
+      <a href="criar_time.html">Criar Time</a>
+      <a href="publicos.html">Times Públicos</a>
+      <a href="cadastro.html">Tipos</a>
+      <a href="faq.html">FAQ</a>
+      <a href="depoimentos.html">Depoimentos</a>
+      <a href="sobre.html">Sobre</a>
+    </div>
+
     <h1>Times Públicos</h1>
-    <div id="lista"></div>
+
+    <div id="lista">Carregando...</div>
+
     <br>
     <a href="times.html" class="back-button">Voltar</a>
+
   </div>
 
   <script src="frontend-api.js"></script>
+
 <script>
 (async function(){
-  const user = JSON.parse(localStorage.getItem("user")||"null");
-  if (!user) { alert("Você precisa estar logado para ver times públicos"); window.location.href = "index.html"; return; }
 
-  const res = await apiFetch("/shared"); // assumes GET /shared returns public teams
+  // --- LOGIN CHECK ---
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  if (!user) {
+    alert("Você precisa estar logado para ver times públicos");
+    return window.location.href = "index.html";
+  }
+
+  // --- FETCH PUBLIC TEAMS ---
+  const res = await apiFetch("/teams/shared");
   const publicos = res.ok ? (res.data || []) : [];
-  let pokemonList = [];
 
-  async function loadPokemonList(){
-    for (let i = 1; i <= 151; i++){
-      const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
-      const poke = await r.json();
-      pokemonList.push(poke);
+  // --- NAME → ID MAPPING ---
+  const nameToId = {};
+
+  async function loadPokemonMap() {
+    for (let i = 1; i <= 151; i++) {
+      try {
+        const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
+        if (!r.ok) continue;
+        const poke = await r.json();
+        nameToId[poke.name.toLowerCase()] = i;
+      } catch {}
     }
-    mostrarTimes();
   }
 
-  function getPokemonSprite(name){
-    const p = pokemonList.find(p=>p.name===name.toLowerCase());
-    return p ? p.sprites.front_default : '';
-  }
-
-  function mostrarTimes(){
+  // --- RENDER PUBLIC TEAMS ---
+  function mostrarTimes() {
     const div = document.getElementById("lista");
-    div.innerHTML = publicos.length===0 ? "<p>Nenhum time público ainda.</p>" : "";
-    publicos.forEach(time => {
-      const box = document.createElement("div");
-      box.className = "card time-card";
-      const pokemons = (time.pokemon||[]).map(p=>`<div class='pokemon-item'>${getPokemonSprite(p)?`<img src='${getPokemonSprite(p)}' width='60'>`:''}<span>${p}</span></div>`).join("");
-      box.innerHTML = `<h3>${time.name}</h3><p class='time-owner'>Por: ${time.owner?.username || time.ownerId}</p><div class='pokemon-grid'>${pokemons}</div>`;
-      div.appendChild(box);
+
+    if (!publicos.length) {
+      div.innerHTML = "<p>Nenhum time público ainda.</p>";
+      return;
+    }
+
+    div.innerHTML = "";
+
+    publicos.forEach(t => {
+      const pokeHTML = (t.pokemon || []).map(p => {
+        const id = nameToId[p.toLowerCase()] || 1;
+        return `
+          <div class="pokemon-item">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png">
+            <span>${p}</span>
+          </div>`;
+      }).join("");
+
+      const card = document.createElement("div");
+      card.className = "card time-card";
+      card.innerHTML = `
+        <h3>${t.name}</h3>
+        <p class="time-owner">Por: ${t.owner?.username || t.ownerId}</p>
+        <div class="pokemon-grid">${pokeHTML}</div>
+      `;
+      div.appendChild(card);
     });
   }
 
-  await loadPokemonList();
+  // --- LOAD EVERYTHING ---
+  await loadPokemonMap();
+  mostrarTimes();
+
 })();
 </script>
 
-
-    loadPokemonList();
-  </script>
 </body>
 </html>
