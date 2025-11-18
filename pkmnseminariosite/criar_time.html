@@ -27,17 +27,22 @@
     <button id="btnClear" style="background-color:#f44336;">Limpar Time</button>
     <a href="times.html">Voltar</a>
   </div>
+
 <script src="frontend-api.js"></script>
 <script>
 const user = JSON.parse(localStorage.getItem("user") || "null");
 if (!user) { alert("Você precisa estar logado"); window.location.href = "index.html"; }
 document.getElementById("usuario").textContent = user.username;
+
 let slots = [null,null,null,null,null,null];
 let editingId = null;
+
 const params = new URLSearchParams(location.search);
 if (params.has("edit")) editingId = params.get("edit");
+
 const nameToId = {};
 let pokemonList = [];
+
 async function loadPokemonList() {
   const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151');
   const j = await res.json();
@@ -45,29 +50,44 @@ async function loadPokemonList() {
   pokemonList.forEach(p => nameToId[p.name] = p.id);
   renderPokemonList(pokemonList);
 }
+
 function renderPokemonList(list) {
   const container = document.getElementById("pokemonList");
   container.innerHTML = "";
   list.forEach(p => {
     const div = document.createElement("div");
     div.className = "card";
-    div.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png"><p>${p.name}</p><button data-name="${p.name}">Adicionar</button>`;
+    div.innerHTML =
+      `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png">
+       <p>${p.name}</p>
+       <button data-name="${p.name}">Adicionar</button>`;
     container.appendChild(div);
     div.querySelector("button").onclick = () => { selectPokemon(p.name); };
   });
 }
+
 document.getElementById("pokemonSearch").oninput = () => {
   const q = document.getElementById("pokemonSearch").value.toLowerCase();
   renderPokemonList(pokemonList.filter(p => p.name.includes(q)));
 };
+
 function selectPokemon(name) {
   const idx = slots.indexOf(null);
   if (idx === -1) return alert("Slots cheios");
   slots[idx] = name;
   renderSlots();
+  closeModal();
 }
-function openModal(){ if (!pokemonList.length) loadPokemonList(); document.getElementById("pokemonModal").style.display="block"; }
-function closeModal(){ document.getElementById("pokemonModal").style.display="none"; }
+
+function openModal(){ 
+  if (!pokemonList.length) loadPokemonList();
+  document.getElementById("pokemonModal").style.display="block"; 
+}
+
+function closeModal(){ 
+  document.getElementById("pokemonModal").style.display="none"; 
+}
+
 function renderSlots(){
   const container = document.getElementById("slots");
   container.innerHTML = "";
@@ -76,7 +96,10 @@ function renderSlots(){
     div.className="card";
     if (slots[i]) {
       const id = nameToId[slots[i]] || 1;
-      div.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png"><p>${slots[i]}</p><button data-i="${i}">Remover</button>`;
+      div.innerHTML =
+        `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png">
+         <p>${slots[i]}</p>
+         <button data-i="${i}">Remover</button>`;
       div.querySelector("button").onclick = () => { slots[i]=null; renderSlots(); };
     } else {
       div.innerHTML = `<button data-i="${i}">Adicionar</button>`;
@@ -85,7 +108,12 @@ function renderSlots(){
     container.appendChild(div);
   }
 }
-document.getElementById("btnClear").onclick = () => { slots=[null,null,null,null,null,null]; renderSlots(); };
+
+document.getElementById("btnClear").onclick = () => { 
+  slots=[null,null,null,null,null,null]; 
+  renderSlots(); 
+};
+
 document.getElementById("btnSave").onclick = async () => {
   const name = document.getElementById("nomeTime").value.trim();
   const pokemons = slots.filter(Boolean);
@@ -94,8 +122,10 @@ document.getElementById("btnSave").onclick = async () => {
   let res;
   if (editingId) res = await apiFetch(`/teams/${editingId}`, { method: "PUT", body: JSON.stringify(payload) });
   else res = await apiFetch(`/teams`, { method: "POST", body: JSON.stringify(payload) });
-  if (res.ok) { alert("Time salvo!"); window.location.href="times.html"; } else alert(res.data?.error || "Erro ao salvar time");
+  if (res.ok) { alert("Time salvo!"); window.location.href="times.html"; }
+  else alert(res.data?.error || "Erro ao salvar time");
 };
+
 async function loadEdit(){
   if (!editingId) return renderSlots();
   const res = await apiFetch(`/teams/${editingId}`);
@@ -104,9 +134,11 @@ async function loadEdit(){
   slots = (res.data.pokemon || []).slice(0,6).concat(Array(6).fill(null)).slice(0,6);
   renderSlots();
 }
+
 loadPokemonList();
 loadEdit();
 renderSlots();
 </script>
+
 </body>
 </html>
