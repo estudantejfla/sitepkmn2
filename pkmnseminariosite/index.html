@@ -1,84 +1,40 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Login Pokémon</title>
+  <meta charset="utf-8">
+  <title>Login</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <video autoplay muted loop id="bg-video" class="background-video">
-    <source src="imagens/background.mp4" type="video/mp4">
-  </video>
-
   <div class="container">
-    <a class="btn" href="blog.html">← Voltar para o Blog</a>
-    <h1>Login Pokémon</h1>
-
-    <div class="box">
-      <h2>Entrar</h2>
-      <input id="loginUser" placeholder="Usuário"><br>
-      <input id="loginPass" type="password" placeholder="Senha"><br>
-      <button onclick="login()">Entrar</button>
-    </div>
-
-    <div class="box">
-      <h2>Criar Conta</h2>
-      <input id="newUser" placeholder="Novo usuário"><br>
-      <input id="newPass" type="password" placeholder="Nova senha"><br>
-      <button onclick="criarConta()">Criar Conta</button>
-    </div>
+    <h1>Login</h1>
+    <input id="username" placeholder="Usuário"><br>
+    <input id="password" placeholder="Senha" type="password"><br>
+    <button id="btnLogin">Entrar</button>
+    <button id="btnRegister">Registrar</button>
   </div>
-
-  <script src="frontend-api.js"></script>
-
+<script src="frontend-api.js"></script>
 <script>
-/* ======================
-   CRIAR CONTA (REGISTER)
-   ====================== */
-async function criarConta() {
-  const username = document.getElementById("newUser").value.trim();
-  const password = document.getElementById("newPass").value.trim();
-
-  if (!username || !password)
-    return alert("Preencha usuário e senha");
-
-  const res = await apiFetch("/auth/register", {
-    method: "POST",
-    body: JSON.stringify({ username, password })
-  });
-
-  if (res.ok) {
-    alert("Conta criada! Agora faça login.");
-  } else {
-    alert(res.data?.error || "Erro ao criar conta");
-  }
-}
-
-/* ======================
-   LOGIN
-   ====================== */
-async function login() {
-  const username = document.getElementById("loginUser").value.trim();
-  const password = document.getElementById("loginPass").value.trim();
-
-  if (!username || !password)
-    return alert("Preencha usuário e senha");
-
-  const res = await apiFetch("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ username, password })
-  });
-
-  if (!res.ok) {
-    return alert(res.data?.error || "Credenciais inválidas");
-  }
-
+document.getElementById("btnLogin").onclick = async () => {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  if (!username || !password) return alert("Preencha usuário e senha");
+  const res = await apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });
+  if (!res.ok) return alert(res.data?.error || "Erro ao logar");
   localStorage.setItem("token", res.data.token);
   localStorage.setItem("user", JSON.stringify(res.data.user));
-
   window.location.href = "times.html";
-}
+};
+document.getElementById("btnRegister").onclick = async () => {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  if (!username || !password) return alert("Preencha usuário e senha");
+  const res = await apiFetch("/auth/register", { method: "POST", body: JSON.stringify({ username, password }) });
+  if (!res.ok) return alert(res.data?.error || "Erro ao registrar");
+  localStorage.setItem("token", res.data.token);
+  localStorage.setItem("user", JSON.stringify(res.data.user));
+  window.location.href = "times.html";
+};
 </script>
-
 </body>
 </html>
