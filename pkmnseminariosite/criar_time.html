@@ -181,7 +181,7 @@ async function salvarTime() {
     return alert("Nome e pelo menos 1 Pokémon obrigatórios!");
 
   const payload = {
-  ownerId: Number(user.id),
+  ownerId: user.id,
   name,
   pokemon: pokemons,
   description: ""
