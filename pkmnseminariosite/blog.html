@@ -37,23 +37,28 @@
   </div>
   <h2>Postagens da Comunidade</h2>
   <div id="userPosts" class="grid"></div>
-  <script>
-    let user = localStorage.getItem("logado");
-    let contas = JSON.parse(localStorage.getItem("contas")) || {};
-    if (!user || !contas[user]) {
-      alert("Você precisa estar logado para ver e escrever no blog");
-      window.location.href = "index.html";
-    }
-    function renderUserPosts(){
-      const posts = JSON.parse(localStorage.getItem('blog_posts')||'[]');
-      const el = document.getElementById('userPosts');
-      el.innerHTML = posts.length ? '' : '<p class="muted">Sem postagens ainda. <a href="postar.html">Crie a primeira!</a></p>';
-      posts.forEach(p=>{
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `<h3>${p.title}</h3><p class="muted">Publicado em ${p.date}</p><p>${p.body}</p>`;
-        el.appendChild(card);
-      });
-    }
-    renderUserPosts();
-  </script>
+  <script src="frontend-api.js"></script>
+<script>
+(async function(){
+  const res = await apiFetch("/posts");
+  const el = document.getElementById('userPosts');
+  el.innerHTML = "";
+  if (!res.ok) {
+    el.innerHTML = '<p class="muted">Erro ao carregar postagens.</p>';
+    return;
+  }
+  const posts = res.data || [];
+  if (!posts.length) {
+    el.innerHTML = '<p class="muted">Sem postagens ainda. <a href="postar.html">Crie a primeira!</a></p>';
+    return;
+  }
+  posts.forEach(p=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '';
+    card.innerHTML = `<h3>${p.title}</h3><p class="muted">Publicado em ${date}</p><p>${p.content}</p><p class="muted">Por: ${p.author?.username || "Desconhecido"}</p>`;
+    el.appendChild(card);
+  });
+})();
+</script>
+
