@@ -28,47 +28,46 @@
     <a href="times.html" class="back-button">Voltar</a>
   </div>
 
-  <script>
+  <script src="frontend-api.js"></script>
+<script>
+(async function(){
+  const user = JSON.parse(localStorage.getItem("user")||"null");
+  if (!user) { alert("Você precisa estar logado para ver times públicos"); window.location.href = "index.html"; return; }
 
-    let user = localStorage.getItem("logado");
-    let contas = JSON.parse(localStorage.getItem("contas")) || {};
-    if (!user || !contas[user]) {
-      alert("Você precisa estar logado para ver times públicos");
-      window.location.href = "index.html";
+  const res = await apiFetch("/shared"); // assumes GET /shared returns public teams
+  const publicos = res.ok ? (res.data || []) : [];
+  let pokemonList = [];
+
+  async function loadPokemonList(){
+    for (let i = 1; i <= 151; i++){
+      const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
+      const poke = await r.json();
+      pokemonList.push(poke);
     }
+    mostrarTimes();
+  }
 
-    let publicos = JSON.parse(localStorage.getItem("timesPublicos")) || [];
-    let pokemonList = [];
+  function getPokemonSprite(name){
+    const p = pokemonList.find(p=>p.name===name.toLowerCase());
+    return p ? p.sprites.front_default : '';
+  }
 
-    async function loadPokemonList() {
-      for (let i = 1; i <= 151; i++) {
-        let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
-        let poke = await res.json();
-        pokemonList.push(poke);
-      }
-      mostrarTimes();
-    }
+  function mostrarTimes(){
+    const div = document.getElementById("lista");
+    div.innerHTML = publicos.length===0 ? "<p>Nenhum time público ainda.</p>" : "";
+    publicos.forEach(time => {
+      const box = document.createElement("div");
+      box.className = "card time-card";
+      const pokemons = (time.pokemon||[]).map(p=>`<div class='pokemon-item'>${getPokemonSprite(p)?`<img src='${getPokemonSprite(p)}' width='60'>`:''}<span>${p}</span></div>`).join("");
+      box.innerHTML = `<h3>${time.name}</h3><p class='time-owner'>Por: ${time.owner?.username || time.ownerId}</p><div class='pokemon-grid'>${pokemons}</div>`;
+      div.appendChild(box);
+    });
+  }
 
-    function getPokemonSprite(name) {
-      let p = pokemonList.find(p => p.name === name.toLowerCase());
-      return p ? p.sprites.front_default : '';
-    }
+  await loadPokemonList();
+})();
+</script>
 
-    function mostrarTimes() {
-      let div = document.getElementById("lista");
-      div.innerHTML = publicos.length === 0 ? "<p>Nenhum time público ainda.</p>" : "";
-      publicos.forEach(time => {
-        let box = document.createElement("div");
-        box.className = "card time-card";
-        let pokemons = time.pokemons.map(p => `
-          <div class='pokemon-item'>
-            ${getPokemonSprite(p) ? `<img src='${getPokemonSprite(p)}' width='60'>` : ''}
-            <span>${p}</span>
-          </div>`).join("");
-        box.innerHTML = `<h3>${time.nome}</h3><p class='time-owner'>Por: ${time.dono}</p><div class='pokemon-grid'>${pokemons}</div>`;
-        div.appendChild(box);
-      });
-    }
 
     loadPokemonList();
   </script>
