@@ -1,4 +1,4 @@
-const BACKEND_URL = "https://bckendpkmn.onrender.comL";
+const BACKEND_URL = "https://bckendpkmn.onrender.com";
 
 function authHeaders() {
   const token = localStorage.getItem("token");
