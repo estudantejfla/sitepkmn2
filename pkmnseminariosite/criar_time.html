@@ -42,138 +42,71 @@
     <button onclick="limparTime()" style="background-color: #f44336;">Limpar Time</button><br><br>
     <a href="times.html">Voltar</a>
 
-    <script>
-      let user = localStorage.getItem("logado");
-      let contas = JSON.parse(localStorage.getItem("contas")) || {};
-      if (!user || !contas[user]) {
-        alert("Você precisa estar logado");
-        window.location.href = "index.html";
-      }
-      document.getElementById("usuario").textContent = user;
+    <script src="frontend-api.js"></script>
+<script>
+(async function(){
+  const user = JSON.parse(localStorage.getItem("user")||"null");
+  if (!user) { alert("Você precisa estar logado"); window.location.href = "index.html"; return; }
+  document.getElementById("usuario").textContent = user.username || user.email;
 
-      let slots = [];
-      let editingIndex = -1;
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('edit')) {
-        editingIndex = parseInt(urlParams.get('edit'));
-        let time = contas[user].times[editingIndex];
-        if (time) {
-          document.getElementById("nomeTime").value = time.nome;
-          slots = [...time.pokemons];
-        }
-      }
+  let slots = [];
+  let editingId = null;
+  const params = new URLSearchParams(location.search);
+  if (params.has("edit")) editingId = params.get("edit");
 
-      function mostrarSlots() {
-        let container = document.getElementById("slots");
-        container.innerHTML = "";
-        for (let i = 0; i < 6; i++) {
-          let div = document.createElement("div");
-          div.className = "card";
-          if (slots[i]) {
-            div.innerHTML = `
-              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${getPokemonId(slots[i])}.png">
-              <p>${slots[i]}</p>
-              <button onclick="removerPokemon(${i})">Remover</button>
-            `;
-          } else {
-            div.innerHTML = `<button onclick="abrirModal(${i})">Adicionar Pokémon</button>`;
-          }
-          container.appendChild(div);
-        }
-      }
-
-      function getPokemonId(name) {
-        return pokemonList.findIndex(p => p.name === name) + 1;
-      }
-
-      let pokemonList = [];
-      let modal = document.getElementById("pokemonModal");
-      let currentSlot = 0;
-
-      function abrirModal(i) {
-        currentSlot = i;
-        modal.style.display = "block";
-      }
-
-      function fecharModal() {
-        modal.style.display = "none";
-      }
-
-async function carregarPokemons(){
-  let container = document.getElementById("pokemonList");
-  container.innerHTML = "";
-  let invalid = ["mega","gmax","gigantamax","eternamax","totem"];
-  for (let i = 1; i <= 1025; i++) {
-    try {
-      let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
-      if(!res.ok) continue;
-      let poke = await res.json();
-      let name = poke.name;
-      let lower = name.toLowerCase();
-      let skip = invalid.some(s=> lower.includes(s));
-      if(skip) continue;
-      let div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = `
-        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i}.png">
-        <p>${name}</p>
-        <button onclick="selecionarPokemon('${name}')">Adicionar</button>
-      `;
-      container.appendChild(div);
-    } catch(e){}
+  async function loadEdit() {
+    if (!editingId) return mostrarSlots();
+    const res = await apiFetch(`/teams/${editingId}`);
+    if (!res.ok) return alert("Erro ao carregar time para edição");
+    const team = res.data;
+    document.getElementById("nomeTime").value = team.name;
+    slots = team.pokemon || [];
+    mostrarSlots();
   }
-}
 
-      
-
-      function selecionarPokemon(nome) {
-        slots[currentSlot] = nome;
-        mostrarSlots();
-        fecharModal();
+  function mostrarSlots() {
+    const container = document.getElementById("slots");
+    container.innerHTML = "";
+    for (let i=0;i<6;i++){
+      const div = document.createElement("div");
+      div.className = "card";
+      if (slots[i]) {
+        div.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${getPokemonId(slots[i])}.png"><p>${slots[i]}</p><button onclick='removerPokemon(${i})'>Remover</button>`;
+      } else {
+        div.innerHTML = `<button onclick='abrirModal(${i})'>Adicionar Pokémon</button>`;
       }
+      container.appendChild(div);
+    }
+  }
 
-      function removerPokemon(i) {
-        slots[i] = null;
-        mostrarSlots();
-      }
+  window.getPokemonId = function(name){ return slotsLikeIndex(name);  };
 
-      function buscarPokemon() {
-        let termo = document.getElementById("pokemonSearch").value.toLowerCase();
-        let cards = document.querySelectorAll("#pokemonList .card");
-        cards.forEach(card => {
-          let nome = card.querySelector("p").textContent.toLowerCase();
-          card.style.display = nome.includes(termo) ? "block" : "none";
-        });
-      }
+  window.selecionarPokemon = function(nome){
+    slots[currentSlot] = nome;
+    mostrarSlots();
+    fecharModal();
+  };
 
-      function salvarTime() {
-        let nome = document.getElementById("nomeTime").value;
-        let pokemons = slots.filter(p => p);
-        if (!nome || pokemons.length === 0) {
-          alert("Nome e pelo menos 1 Pokémon obrigatórios");
-          return;
-        }
-        let time = { nome, pokemons };
-        if (editingIndex >= 0) contas[user].times[editingIndex] = time;
-        else contas[user].times.push(time);
-        localStorage.setItem("contas", JSON.stringify(contas));
-        alert("Time salvo!");
-        window.location.href = "times.html";
-      }
+  async function salvarTime(){
+    const nome = document.getElementById("nomeTime").value.trim();
+    const pokemons = slots.filter(Boolean);
+    if(!nome || pokemons.length===0) return alert("Nome e pelo menos 1 Pokémon obrigatórios");
+    const payload = { ownerId: user.id, name: nome, pokemon: pokemons, description: "" };
+    let res;
+    if (editingId) res = await apiFetch(`/teams/${editingId}`, { method: "PUT", body: JSON.stringify(payload) });
+    else res = await apiFetch(`/teams`, { method: "POST", body: JSON.stringify(payload) });
 
-      function limparTime() {
-        slots = [];
-        document.getElementById("nomeTime").value = "";
-        mostrarSlots();
-      }
+    if (res.ok) { alert("Time salvo!"); window.location.href = "times.html"; }
+    else alert(res.data?.error||"Erro ao salvar time");
+  }
 
-      document.querySelector(".close").onclick = fecharModal;
-      window.onclick = e => { if (e.target == modal) fecharModal(); }
-      document.getElementById("pokemonSearch").addEventListener("input", buscarPokemon);
+  document.querySelector('button[onclick="salvarTime()"]').addEventListener('click', salvarTime);
 
-      mostrarSlots();
-      carregarPokemons();
-    </script>
+  await loadEdit();
+  mostrarSlots();
+})();
+</script>
+
   </div>
 </body>
 </html>
