@@ -33,25 +33,34 @@
       <a class="btn secondary" href="blog.html">Cancelar</a>
     </div>
   </div>
-  <script>
+  <script src="frontend-api.js"></script>
+<script>
+(async function(){
+  const user = JSON.parse(localStorage.getItem("user")||"null");
+  if (!user) { alert("Você precisa estar logado para postar no blog"); window.location.href = "index.html"; return; }
 
-    let user = localStorage.getItem("logado");
-    let contas = JSON.parse(localStorage.getItem("contas")) || {};
-    if (!user || !contas[user]) {
-      alert("Você precisa estar logado para postar no blog");
-      window.location.href = "index.html";
-    }
+  document.querySelector('.btn[onclick="salvarPost()"]').addEventListener('click', salvarPost);
 
-    function salvarPost() {
-      const t = document.getElementById('postTitle').value.trim();
-      const b = document.getElementById('postBody').value.trim();
-      if(!t || !b) return alert('Preencha título e conteúdo');
-      const posts = JSON.parse(localStorage.getItem('blog_posts')||'[]');
-      posts.unshift({ id: Date.now(), title: t, body: b, date: new Date().toISOString().slice(0,10) });
-      localStorage.setItem('blog_posts', JSON.stringify(posts));
+  async function salvarPost(){
+    const title = document.getElementById('postTitle').value.trim();
+    const body = document.getElementById('postBody').value.trim();
+    if(!title || !body) return alert('Preencha título e conteúdo');
+
+    const res = await apiFetch("/posts", {
+      method: "POST",
+      body: JSON.stringify({ title, content: body, authorId: user.id })
+    });
+
+    if (res.ok) {
+      alert("Post publicado!");
       location.href = 'blog.html';
+    } else {
+      alert(res.data?.error || 'Erro ao publicar');
     }
-  </script>
+  }
+})();
+</script>
+
   <script src="script.js"></script>
 </body>
 </html>
