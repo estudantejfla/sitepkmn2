@@ -10,9 +10,24 @@ async function apiFetch(path, opts = {}) {
   if (!headers["Content-Type"] && !(opts.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
+
   opts.headers = { ...headers, ...authHeaders() };
-  const res = await fetch(`${BACKEND_URL}${path}`, opts);
+
+  let res;
+  try {
+    res = await fetch(`${BACKEND_URL}${path}`, opts);
+  } catch (e) {
+    return { ok: false, status: 0, data: { error: "Falha ao conectar ao servidor." }};
+  }
+
   const text = await res.text();
-  try { return { ok: res.ok, status: res.status, data: text ? JSON.parse(text) : null }; }
-  catch(e) { return { ok: res.ok, status: res.status, data: text }; }
+
+  let json = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch (_) {
+    json = text;
+  }
+
+  return { ok: res.ok, status: res.status, data: json };
 }
